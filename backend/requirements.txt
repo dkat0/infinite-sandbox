@@ -1,2 +1,6 @@
 python-dotenv
 pydantic
+elevenlabs
+openai
+runwayml
+pillow
