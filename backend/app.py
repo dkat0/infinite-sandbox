@@ -84,6 +84,7 @@ def init_story(user_theme):
     try:
         result_json = json.loads(assistant_reply)
     except json.JSONDecodeError:
+        print("Error parsing JSON")
         result_json = {}
     return result_json
 
@@ -130,6 +131,7 @@ def generate_story_part(user_action, last_image_prompt, storyline, core_details)
         # Append the new storyline to the previous storyline.
         result_json["storyline"] = storyline + "\n" + result_json.get("new_storyline", "")
     except json.JSONDecodeError:
+        print("Error parsing JSON")
         result_json = {}
     return result_json
 
@@ -204,26 +206,32 @@ def process_story(story_id, user_theme=None, user_action=None):
     try:
         if user_theme:
             # This is an initialization process.
-            print("Generating story...")
+            print(f"[{story_id}] Generating LLM response...")
             generated_story = init_story(user_theme)
             if not generated_story:
                 stories[story_id]['status'] = 'error'
+
+                print(f"[{story_id}] Error generating LLM response")
                 return
-            print(generated_story)
-            
+            print(f"[{story_id}]" + str(generated_story))
+
             if "image_prompts" not in generated_story or len(generated_story["image_prompts"]) != 3:
                 stories[story_id]['status'] = 'error'
+                print(f"[{story_id}] image prompts invalid")
                 return
 
-            print("Generating images...")
+            print(f"[{story_id}] Generating images with DALLE...")
             images = generate_images_parallel(generated_story["image_prompts"])
-            print("Generating video...")
+
+            print(f"[{story_id}] Generating video with Runway...")
             video = runway_client.generate_video(images, generated_story.get("video_generation_prompt"))
-            print("Generating narration...")
+
+            print(f"[{story_id}] Generating narration audio with ElevenLabs...")
             narration_audio = generate_narration(generated_story["narration"])
             narration_text = generated_story["narration"]
+            print(f"[{story_id}] Narration audio generation done!")
+            
             actions = generated_story.get("actions", [])
-
 
             last_image_prompt = generated_story["image_prompts"][-1]
             last_image_url = images[-1]
@@ -242,35 +250,43 @@ def process_story(story_id, user_theme=None, user_action=None):
                 "last_image_prompt": last_image_prompt,
                 "last_image_url": last_image_url,
             })
+            print(f"[{story_id}] Story initialization done!")
         else:
             # This is for generating the next scene.
             current_context = stories[story_id]
             current_storyline = current_context.get("storyline", "")
             current_core_details = current_context.get("core_details", "")
             previous_last_image_prompt = current_context.get("last_image_prompt", "")
+
             previous_last_image_url = current_context.get("last_image_url", "")
 
-            print("Generating next story part...")
+            print(f"[{story_id}] Generating next story part with LLM...")
             new_story = generate_story_part(
                 user_action,
                 storyline=current_storyline,
                 core_details=current_core_details,
                 last_image_prompt=previous_last_image_prompt
             )
-            print(new_story)
+
+            print(f"[{story_id}]" + str(new_story))
 
             if not new_story or "image_prompts" not in new_story or len(new_story["image_prompts"]) != 2:
                 stories[story_id]['status'] = 'error'
                 return
 
-            print("Generating images...")
+            print(f"[{story_id}] Generating images with DALLE...")
             new_image_urls = generate_images_parallel(new_story["image_prompts"])
-            print("Generating video...")
+
+            print(f"[{story_id}] Generating video with Runway...")
             combined_images = [previous_last_image_url] + new_image_urls
             video = runway_client.generate_video(combined_images, new_story.get("video_generation_prompt"))
-            print("Generating narration...")
+
+            print(f"[{story_id}] Generating narration audio with ElevenLabs...")
+
             narration_audio = generate_narration(new_story["narration"])
             narration_text = new_story["narration"]
+            print(f"[{story_id}] Narration audio generation done!")
+
 
             actions = new_story.get("actions", [])
 
@@ -290,6 +306,7 @@ def process_story(story_id, user_theme=None, user_action=None):
                 "last_image_prompt": new_last_image_prompt,
                 "last_image_url": new_last_image_url,
             })
+            print("All done!")
     except Exception as e:
         print(f"Error processing story {story_id}: {e}")
         stories[story_id]['status'] = 'error'

@@ -2,7 +2,7 @@ import time
 import requests
 import json
 
-BASE_URL = "http://localhost:5000"
+BASE_URL = "https://infinite-sandbox.onrender.com/"
 
 def poll_status(story_id, poll_interval=5):
     """
