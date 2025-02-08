@@ -155,8 +155,10 @@ def generate_video(image_urls, video_generation_prompt):
     # Create a new image-to-video task using the "gen3a_turbo" model
     task = runway_client.image_to_video.create(
         model='gen3a_turbo',
-        prompt_images=image_urls, # not working for multiple??
-        prompt_text=video_generation_prompt,
+        prompt_images=[{"uri": image_urls[0], "position": "first"},
+                       {"uri": image_urls[1], "position": "first"}, # not sure??
+                       {"uri": image_urls[2], "position": "last"}],
+        prompt_text=video_generation_prompt
     )
     task_id = task.id
 
