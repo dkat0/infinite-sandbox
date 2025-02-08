@@ -1,91 +1,165 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { VolumeIcon, VolumeXIcon, PauseIcon, PlayIcon } from "lucide-react"
+import { VolumeIcon, VolumeXIcon } from "lucide-react"
+import ReactPlayer from "react-player"
 
-interface StoryScreenProps {
-  videoSrc: string
-  options: string[]
-  onOptionSelect: (option: string) => void
-  onQuit: () => void
+interface Choice {
+  id: string
+  text: string
 }
 
-export default function StoryScreen({ videoSrc, options, onOptionSelect, onQuit }: StoryScreenProps) {
-  const [isPlaying, setIsPlaying] = useState(true)
-  const [isMuted, setIsMuted] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
+interface InteractiveStoryScreenProps {
+  onQuit: () => void
+  isQuitConfirmationOpen: boolean
+}
 
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
+export default function InteractiveStoryScreen({ onQuit, isQuitConfirmationOpen }: InteractiveStoryScreenProps) {
+  const [isMuted, setIsMuted] = useState(false)
+  const [videoEnded, setVideoEnded] = useState(false)
+  const [choices, setChoices] = useState<Choice[]>([
+    { id: "1", text: "Choice 1 with some longer text to demonstrate sizing" },
+    { id: "2", text: "Choice 2" },
+  ])
+  const [videoUrl, setVideoUrl] = useState("placeholder.mp4")
+  const [audioUrl, setAudioUrl] = useState("placeholder.mp3")
+  const [narrationText, setNarrationText] = useState(
+    "On a stormy London night, Elliot returned to his workshop… but something was amiss. A letter—unmarked, unexpected—rested on his workbench. He unfolded it, and the words sent a chill down his spine… 'The timepiece holds the key. Midnight approaches. Trust no one.'",
+  )
+  const [isPlaying, setIsPlaying] = useState(true)
+  const [audioEnded, setAudioEnded] = useState(false)
+  const playerRef = useRef<ReactPlayer>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const narrationRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (isQuitConfirmationOpen) {
+      setIsPlaying(false)
+    } else {
+      setIsPlaying(true)
+    }
+  }, [isQuitConfirmationOpen])
+
+  useEffect(() => {
+    const audioElement = audioRef.current
+    if (audioElement) {
+      audioElement.muted = isMuted
+
+      const playAudio = () => {
+        if (isPlaying && !audioEnded && audioUrl) {
+          audioElement.src = audioUrl
+          const playPromise = audioElement.play()
+          if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+              console.error("Audio playback failed:", error)
+              // If autoplay is not allowed, mute the audio and try again
+              if (error.name === "NotAllowedError") {
+                audioElement.muted = true
+                audioElement.play().catch((e) => console.error("Audio playback failed even when muted:", e))
+              }
+            })
+          }
+        } else {
+          audioElement.pause()
+        }
       }
-      setIsPlaying(!isPlaying)
+
+      playAudio()
+
+      audioElement.onended = () => {
+        setAudioEnded(true)
+      }
+    }
+  }, [isPlaying, isMuted, audioEnded, audioUrl])
+
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev)
+  }
+
+  const handleVideoProgress = (state: { played: number; playedSeconds: number }) => {
+    if (audioRef.current && !isNaN(state.playedSeconds)) {
+      audioRef.current.currentTime = state.playedSeconds
     }
   }
 
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted
-      setIsMuted(!isMuted)
+  const handleVideoEnd = () => {
+    setVideoEnded(true)
+  }
+
+  const handleChoiceSelect = (choiceId: string) => {
+    console.log(`Selected choice: ${choiceId}`)
+    // Here you would implement the logic to load the next video based on the choice
+    // For now, we'll just reset the current video
+    if (playerRef.current) {
+      playerRef.current.seekTo(0)
+      setIsPlaying(true)
+      setVideoEnded(false)
+      setAudioEnded(false)
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0
+        const playPromise = audioRef.current.play()
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => console.error("Audio playback failed:", error))
+        }
+      }
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-slate-50 to-white">
-      <div className="relative w-full max-w-4xl rounded-lg overflow-hidden">
-        <video ref={videoRef} src={videoSrc} className="w-full rounded-lg shadow-lg" autoPlay loop muted={isMuted} />
-        <div className="absolute bottom-4 left-4 flex space-x-2">
-          <Button
-            onClick={togglePlay}
-            variant="secondary"
-            size="icon"
-            className="bg-white/70 hover:bg-white/90 backdrop-blur-sm"
-          >
-            {isPlaying ? (
-              <PauseIcon className="text-slate-600 w-4 h-4" />
-            ) : (
-              <PlayIcon className="text-slate-600 w-4 h-4" />
-            )}
-          </Button>
+    <div className="fixed inset-0 w-full h-full flex flex-col bg-gradient-to-b from-[#1A2A3A] via-[#223344] to-[#1A2A3A]">
+      <div className="relative w-full flex-grow overflow-hidden border-t-4 border-b-4 border-[#B8D1E5] dark:border-[#5A7A99]">
+        <ReactPlayer
+          ref={playerRef}
+          url={videoUrl}
+          playing={isPlaying}
+          muted={true}
+          width="100%"
+          height="100%"
+          style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
+          onProgress={handleVideoProgress}
+          onEnded={handleVideoEnd}
+        />
+        <audio ref={audioRef} onEnded={() => setAudioEnded(true)} />
+        <div className="absolute top-4 right-4 flex space-x-2 z-30">
           <Button
             onClick={toggleMute}
             variant="secondary"
             size="icon"
-            className="bg-white/70 hover:bg-white/90 backdrop-blur-sm"
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm"
           >
-            {isMuted ? (
-              <VolumeXIcon className="text-slate-600 w-4 h-4" />
-            ) : (
-              <VolumeIcon className="text-slate-600 w-4 h-4" />
-            )}
+            {isMuted ? <VolumeXIcon className="text-white" /> : <VolumeIcon className="text-white" />}
+          </Button>
+          <Button onClick={onQuit} className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm">
+            Quit Story
           </Button>
         </div>
+        {videoEnded && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/50 backdrop-blur-md">
+            <div className="flex justify-center items-stretch w-full max-w-4xl px-4">
+              {choices.map((choice) => (
+                <Button
+                  key={choice.id}
+                  onClick={() => handleChoiceSelect(choice.id)}
+                  className="flex-1 mx-2 bg-white/80 hover:bg-white text-[#2B4C6F] dark:bg-[#2B4C6F]/80 dark:hover:bg-[#2B4C6F] dark:text-white 
+                    backdrop-blur-sm px-6 py-4 text-lg font-semibold rounded-md transition-all duration-300 ease-in-out
+                    border-2 border-[#B8D1E5] dark:border-[#5A7A99] shadow-lg hover:shadow-xl
+                    min-w-[150px] max-w-[300px] h-auto whitespace-normal"
+                >
+                  {choice.text}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-      <div className="mt-8 grid grid-cols-2 gap-4 max-w-2xl w-full px-4">
-        {options.map((option, index) => (
-          <Button
-            key={index}
-            onClick={() => onOptionSelect(option)}
-            className="bg-white/80 hover:bg-white/90 text-slate-600 font-light py-6 px-6 
-              rounded-full transition duration-300 ease-out hover:shadow-lg backdrop-blur-sm
-              border border-slate-200 tracking-wide"
-          >
-            {option}
-          </Button>
-        ))}
-      </div>
-      <Button
-        onClick={onQuit}
-        className="mt-8 bg-slate-100/80 hover:bg-slate-200/90 text-slate-500 font-light 
-          py-2 px-6 rounded-full transition duration-300 ease-out tracking-wide"
+      <div
+        ref={narrationRef}
+        className="w-full bg-[#1A2A3A]/80 backdrop-blur-sm flex items-center justify-center px-4 py-4 overflow-y-auto"
+        style={{ maxHeight: "20vh" }}
       >
-        Quit
-      </Button>
+        <div className="text-white text-lg text-center max-w-full">{narrationText}</div>
+      </div>
     </div>
   )
 }
-
