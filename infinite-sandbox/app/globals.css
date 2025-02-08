@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: var(--font-orbitron);
+  }
+
+  body {
+    font-feature-settings: "zero" 1;
+  }
+}
+
+/* Custom animation for text glow effect */
+@keyframes textPulse {
+  0%,
+  100% {
+    text-shadow: 0 0 8px rgba(43, 76, 111, 0.1);
+  }
+  50% {
+    text-shadow: 0 0 16px rgba(43, 76, 111, 0.2);
+  }
+}
+
+.animate-text-pulse {
+  animation: textPulse 4s ease-in-out infinite;
+}
+
+/* Dark mode text glow effect */
+.dark .animate-text-pulse {
+  animation: darkTextPulse 4s ease-in-out infinite;
+}
+
+@keyframes darkTextPulse {
+  0%,
+  100% {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    text-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+  }
+}
+
