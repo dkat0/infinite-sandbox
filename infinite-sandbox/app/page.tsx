@@ -39,6 +39,11 @@ export default function HomePage() {
     setShowError(false)
   }
 
+  const handleTakeMeToWorld = () => {
+    setShowError(false)
+    router.push("/story-selection")
+  }
+
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
       {/* Gradient Background */}
@@ -93,4 +98,3 @@ export default function HomePage() {
     </div>
   )
 }
-
