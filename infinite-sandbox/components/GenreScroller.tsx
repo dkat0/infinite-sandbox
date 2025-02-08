@@ -92,4 +92,3 @@ export default function GenreScroller({ onGenreSelect }: GenreScrollerProps) {
     </div>
   )
 }
-
