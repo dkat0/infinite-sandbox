@@ -5,6 +5,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
+import base64
 
 # Import your API clients and helper functions.
 from openai import OpenAI
@@ -188,7 +189,8 @@ def generate_narration(text):
 
     #play(audio)
     audio_bytes = b''.join(list(audio))
-    return audio_bytes
+    # Convert bytes to base64 string for JSON serialization
+    return base64.b64encode(audio_bytes).decode('utf-8')
 
 def process_story(story_id, user_theme=None, user_action=None):
     """
