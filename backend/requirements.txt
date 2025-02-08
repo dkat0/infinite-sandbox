@@ -1,6 +1,8 @@
+flask
 python-dotenv
 elevenlabs
 openai
 runwayml
 pillow
-gunicorn 
+gunicorn
+requests
