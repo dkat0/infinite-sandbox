@@ -35,21 +35,24 @@ interface GenreScrollerProps {
 export default function GenreScroller({ onGenreSelect }: GenreScrollerProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isHovered, setIsHovered] = useState(false)
+  const [scrollPosition, setScrollPosition] = useState(0)
 
   useEffect(() => {
     const scrollElement = scrollRef.current
     if (!scrollElement) return
 
     let animationFrameId: number
-    let scrollPosition = 0
 
     const scroll = () => {
-      if (isHovered) return
-      scrollPosition += 0.5
-      if (scrollPosition >= scrollElement.scrollWidth / 2) {
-        scrollPosition = 0
+      if (!isHovered) {
+        setScrollPosition((prevPosition) => {
+          const newPosition = prevPosition + 0.5
+          if (newPosition >= scrollElement.scrollWidth / 2) {
+            return 0
+          }
+          return newPosition
+        })
       }
-      scrollElement.scrollLeft = scrollPosition
       animationFrameId = requestAnimationFrame(scroll)
     }
 
@@ -59,6 +62,12 @@ export default function GenreScroller({ onGenreSelect }: GenreScrollerProps) {
       cancelAnimationFrame(animationFrameId)
     }
   }, [isHovered])
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollPosition
+    }
+  }, [scrollPosition])
 
   return (
     <div

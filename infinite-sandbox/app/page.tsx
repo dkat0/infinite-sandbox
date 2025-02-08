@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { QuestionMarkCircledIcon } from "@radix-ui/react-icons"
@@ -13,15 +12,31 @@ import { useRouter } from "next/navigation"
 export default function HomePage() {
   const [prompt, setPrompt] = useState("")
   const [showHelp, setShowHelp] = useState(false)
+  const [showError, setShowError] = useState(false)
   const router = useRouter()
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    router.push("/story")
+    if (prompt.trim() === "") {
+      setShowError(true)
+      inputRef.current?.classList.add("animate-wiggle")
+      setTimeout(() => {
+        inputRef.current?.classList.remove("animate-wiggle")
+      }, 500)
+    } else {
+      router.push("/story")
+    }
   }
 
   const handleGenreSelect = (genre: string) => {
     setPrompt((prevPrompt) => `${prevPrompt} ${genre}`.trim())
+    setShowError(false)
+  }
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrompt(e.target.value)
+    setShowError(false)
   }
 
   return (
@@ -41,10 +56,11 @@ export default function HomePage() {
         <form onSubmit={handleSubmit} className="w-full max-w-md">
           <div className="relative">
             <Input
+              ref={inputRef}
               type="text"
               placeholder="Enter your story prompt..."
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={handlePromptChange}
               className="w-full py-6 px-6 rounded-full text-lg bg-white/40 dark:bg-[#2B4C6F]/20 backdrop-blur-sm 
                 border-[#B8D1E5] dark:border-[#5A7A99] focus:border-[#8BACC9] focus:ring-[#8BACC9] 
                 dark:focus:border-[#7A9AC9] dark:focus:ring-[#7A9AC9] placeholder:text-[#5A7A99]/50 
@@ -60,6 +76,9 @@ export default function HomePage() {
               <QuestionMarkCircledIcon className="w-6 h-6" />
             </Button>
           </div>
+          {showError && (
+            <p className="text-red-500 dark:text-red-400 mt-2 text-sm">Please enter a prompt or select a theme</p>
+          )}
           <Button
             type="submit"
             className="w-full mt-4 bg-white/30 dark:bg-[#2B4C6F]/20 hover:bg-white/40 dark:hover:bg-[#2B4C6F]/30 

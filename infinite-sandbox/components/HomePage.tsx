@@ -8,7 +8,6 @@ import { QuestionMarkCircledIcon } from "@radix-ui/react-icons"
 import HelpPopup from "./HelpPopup"
 import DarkModeToggle from "./DarkModeToggle"
 import GenreScroller from "./GenreScroller"
-import VideoScreen from "./VideoScreen"
 
 export default function HomePage() {
   const [prompt, setPrompt] = useState("")
@@ -71,7 +70,6 @@ export default function HomePage() {
         </form>
         <HelpPopup isOpen={showHelp} onClose={() => setShowHelp(false)} />
       </div>
-      {showVideo && <VideoScreen onClose={() => setShowVideo(false)} />}
     </div>
   )
 }
