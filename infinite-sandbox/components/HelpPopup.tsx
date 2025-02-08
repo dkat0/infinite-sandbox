@@ -20,10 +20,9 @@ export default function HelpPopup({ isOpen, onClose }: HelpPopupProps) {
           <p className="uppercase">Welcome to the Infinite Sandbox System</p>
           <div className="space-y-2">
             <p className="flex items-center space-x-2">
-              <span className="text-[#2B4C6F] dark:text-white/90">01.</span>
-              <span>Initialize your journey with a prompt</span>
+              <span className="text-[#2B4C6F] dark:text-white/90">Initialize your journey with a prompt</span>
             </p>
-            <p className="text-sm italic pl-6">Try these theme ideas:</p>
+            <p className="text-sm italic pl-6">Try these ideas:</p>
             <ul className="space-y-1 pl-8 text-sm">
               <li>• Sci-Fi: "A colony ship discovers an abandoned alien megastructure"</li>
               <li>• Murder Mystery: "A detective investigates a locked-room murder in a smart home"</li>
@@ -37,4 +36,3 @@ export default function HelpPopup({ isOpen, onClose }: HelpPopupProps) {
     </Dialog>
   )
 }
-

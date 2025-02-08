@@ -21,13 +21,6 @@ const storyCards: StoryCard[] = [
       "Unravel a steampunk mystery in Victorian London as you navigate a world of gears, gadgets, and shadowy figures.",
     imageUrl: "/placeholder.svg?height=200&width=400",
   },
-  {
-    id: "2",
-    title: "Echoes of Eternity",
-    description:
-      "Embark on an epic space opera spanning galaxies and millennia, where your choices shape the fate of civilizations.",
-    imageUrl: "/placeholder.svg?height=200&width=400",
-  },
 ]
 
 export default function StorySelectionPage() {

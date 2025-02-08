@@ -13,10 +13,11 @@ export default function HomePage() {
   const [prompt, setPrompt] = useState("")
   const [showHelp, setShowHelp] = useState(false)
   const [showError, setShowError] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (prompt.trim() === "") {
       setShowError(true)
@@ -25,7 +26,21 @@ export default function HomePage() {
         inputRef.current?.classList.remove("animate-wiggle")
       }, 500)
     } else {
-      router.push("/story")
+      setIsLoading(true)
+      try {
+        const response = await fetch('/api/initialize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_theme: prompt }),
+        })
+        const data = await response.json()
+        router.push(`/story/${data.story_id}`)
+      } catch (error) {
+        console.error("Failed to initialize story:", error)
+        setIsLoading(false)
+      }
     }
   }
 
@@ -40,8 +55,15 @@ export default function HomePage() {
   }
 
   const handleTakeMeToWorld = () => {
-    setShowError(false)
     router.push("/story-selection")
+  }
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 text-white text-2xl">
+        Loading your journey...
+      </div>
+    )
   }
 
   return (
@@ -93,6 +115,19 @@ export default function HomePage() {
             Begin Your Journey
           </Button>
         </form>
+
+        <div className="w-full max-w-md mt-4 flex flex-col items-center">
+          <p className="text-[#2B4C6F]/80 dark:text-white/80 mb-2 uppercase tracking-wider">OR</p>
+          <Button
+            onClick={handleTakeMeToWorld}
+            className="w-full bg-[#2B4C6F]/80 dark:bg-white/80 hover:bg-[#2B4C6F] dark:hover:bg-white 
+                text-white dark:text-[#2B4C6F] py-6 px-6 rounded-full transition duration-300 ease-out 
+                hover:shadow-lg backdrop-blur-sm border border-[#B8D1E5] dark:border-[#5A7A99] tracking-widest uppercase"
+          >
+            Take me to a world
+          </Button>
+        </div>
+
         <HelpPopup isOpen={showHelp} onClose={() => setShowHelp(false)} />
       </div>
     </div>
