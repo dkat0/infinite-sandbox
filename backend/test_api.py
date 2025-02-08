@@ -38,7 +38,9 @@ def test_initialize():
     """
     print("Testing /initialize endpoint...")
     init_url = f"{BASE_URL}/initialize"
-    payload = {"user_theme": "A futuristic adventure in space"}
+    #theme = "A futuristic adventure in space"
+    theme = input("Enter a theme for the story: ")
+    payload = {"user_theme": theme}
     try:
         response = requests.post(init_url, json=payload)
         response.raise_for_status()
