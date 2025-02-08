@@ -36,8 +36,8 @@ ELEVENLABS_API_KEY = os.getenv('ELEVENLABS_API_KEY')
 elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
 # ----------------------------
-# Helper Functions (adapted from your code)
-def init_story(user_theme):
+# Helper functions
+def init_story(user_theme, max_retries=3):
     prompt = f"""
     You are an AI Narration and Storyteller assistant. Create a narrative using the user provided theme, with either a cartoon or realistic style. To help yourself create this narrative, give an overview of it in 2-3 sentences. Now this narrative must end with the story being able to go in several directions, and explicitly state the next possible actions the users can take, like an interactive story.
 
@@ -75,21 +75,30 @@ def init_story(user_theme):
         "content": prompt
     }
 
-    response = openai_client.chat.completions.create(
-        model=OPENAI_MODEL,
-        messages=[user_message],
-    )
-    assistant_reply = response.choices[0].message.content.strip()
+    for attempt in range(max_retries):
+        response = openai_client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[user_message],
+        )
+        assistant_reply = response.choices[0].message.content.strip()
 
-    try:
-        result_json = json.loads(assistant_reply)
-    except json.JSONDecodeError:
-        print("Error parsing JSON")
-        result_json = {}
-    return result_json
+        try:
+            result_json = json.loads(assistant_reply)
+
+            if "image_prompts" not in result_json or len(result_json["image_prompts"]) != 3:
+                print(f"Image prompts invalid (attempt {attempt + 1}/{max_retries})")
+                continue
+
+            return result_json
+        except json.JSONDecodeError:
+            print(f"Error parsing JSON (attempt {attempt + 1}/{max_retries})")
+            continue
+    
+    print(f"All attempts failed. Last response: {assistant_reply}")
+    return None
 
 
-def generate_story_part(user_action, last_image_prompt, storyline, core_details):
+def generate_story_part(user_action, last_image_prompt, storyline, core_details, max_retries=3):
     prompt = f"""
     You are an AI Narration and Storyteller assistant. Create the next scene based on the past storyline and the core character details provided. The user has chosen the following action:
     {user_action}
@@ -120,20 +129,29 @@ def generate_story_part(user_action, last_image_prompt, storyline, core_details)
         "role": "user",
         "content": prompt
     }
-    response = openai_client.chat.completions.create(
-        model=OPENAI_MODEL,
-        messages=[user_message],
-    )
-    assistant_reply = response.choices[0].message.content.strip()
 
-    try:
-        result_json = json.loads(assistant_reply)
-        # Append the new storyline to the previous storyline.
-        result_json["storyline"] = storyline + "\n" + result_json.get("new_storyline", "")
-    except json.JSONDecodeError:
-        print("Error parsing JSON")
-        result_json = {}
-    return result_json
+    for attempt in range(max_retries):
+        response = openai_client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[user_message],
+        )
+        assistant_reply = response.choices[0].message.content.strip()
+
+        try:
+            result_json = json.loads(assistant_reply)
+            # Append the new storyline to the previous storyline.
+            if "image_prompts" not in result_json or len(result_json["image_prompts"]) != 2:
+                print(f"Image prompts invalid (attempt {attempt + 1}/{max_retries})")
+                continue
+
+            result_json["storyline"] = storyline + "\n" + result_json.get("new_storyline", "")
+            return result_json
+        except json.JSONDecodeError:
+            print(f"Error parsing JSON (attempt {attempt + 1}/{max_retries})")
+            continue
+    
+    print(f"All attempts failed. Last response: {assistant_reply}")
+    return None
 
 
 def generate_single_image(prompt, image_size="1792x1024"):
@@ -215,11 +233,6 @@ def process_story(story_id, user_theme=None, user_action=None):
                 return
             print(f"[{story_id}]" + str(generated_story))
 
-            if "image_prompts" not in generated_story or len(generated_story["image_prompts"]) != 3:
-                stories[story_id]['status'] = 'error'
-                print(f"[{story_id}] image prompts invalid")
-                return
-
             print(f"[{story_id}] Generating images with DALLE...")
             images = generate_images_parallel(generated_story["image_prompts"])
 
@@ -269,10 +282,6 @@ def process_story(story_id, user_theme=None, user_action=None):
             )
 
             print(f"[{story_id}]" + str(new_story))
-
-            if not new_story or "image_prompts" not in new_story or len(new_story["image_prompts"]) != 2:
-                stories[story_id]['status'] = 'error'
-                return
 
             print(f"[{story_id}] Generating images with DALLE...")
             new_image_urls = generate_images_parallel(new_story["image_prompts"])
