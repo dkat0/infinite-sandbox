@@ -116,8 +116,8 @@ class RunwayUnofficial:
             raise Exception(f"Failed to download image from {image_url}")
         
         # Display the image using PIL
-        image = Image.open(io.BytesIO(image_response.content))
-        image.show()
+        #image = Image.open(io.BytesIO(image_response.content))
+        #image.show()
 
         # Get filename from URL and determine content type
         filename = image_url.split("?")[0].split("/")[-1]
