@@ -25,7 +25,7 @@ export default function HomePage() {
         inputRef.current?.classList.remove("animate-wiggle")
       }, 500)
     } else {
-      router.push("/story")
+      router.push(`/story?theme=${encodeURIComponent(prompt)}`)
     }
   }
 
